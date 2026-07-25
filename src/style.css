@@ -41,18 +41,19 @@ button { font: inherit; }
 .stats small, .stats b { display: block; }
 .stats small { margin-bottom: 6px; color: #5f8193; font-size: 9px; letter-spacing: .14em; }
 .stats b { max-width: 260px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 11px monospace; color: #c2dce7; }
-.mobile-trigger, .mobile-drawer { display: none; }
+.mobile-toolbar { display: none; }
 @media (max-width: 720px) {
   .topbar { height: 70px; padding: 14px 16px; }
   .live, .rail, .stats, .tool-panel { display: none; }
   .brand-mark { width: 36px; height: 36px; }
-  .hero-card { left: 20px; right: 20px; top: auto; bottom: 88px; width: auto; pointer-events: none; }
+  .hero-card { left: 20px; right: 20px; top: auto; bottom: 164px; width: auto; pointer-events: none; }
   .hero-card h1 { font-size: 62px; }
   .hero-card .description, .hero-card .rule, .hero-card .primary { display: none; }
   .globe::after { background: linear-gradient(0deg, rgba(3,12,23,.8), transparent 48%); }
-  .mobile-trigger { display: flex; position: fixed; z-index: 7; left: 14px; right: 14px; bottom: max(14px, env(safe-area-inset-bottom)); height: 54px; padding: 0 18px; align-items: center; justify-content: space-between; border: 1px solid #2caec2; color: white; background: #09202edb; backdrop-filter: blur(14px); }
-  .mobile-drawer { display: grid; position: fixed; z-index: 6; left: 14px; right: 14px; bottom: -420px; grid-template-columns: repeat(2, 1fr); gap: 8px; padding: 14px 14px 78px; border: 1px solid #244f61; background: #071824ee; transition: bottom .25s ease; }
-  .mobile-drawer.open { bottom: 0; }
-  .mobile-drawer button { min-height: 44px; color: #dff9ff; border: 1px solid #234b5b; background: #0b2534; }
+  .mobile-toolbar { display: grid; position: fixed; z-index: 7; left: 10px; right: 10px; bottom: max(10px, env(safe-area-inset-bottom)); gap: 8px; padding: 10px; border: 1px solid #244f61; background: #071824ee; backdrop-filter: blur(14px); }
+  .mobile-group { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; }
+  .mobile-group::-webkit-scrollbar { display: none; }
+  .mobile-toolbar button { flex: 0 0 auto; min-width: 64px; min-height: 40px; padding: 0 12px; color: #dff9ff; border: 1px solid #234b5b; background: #0b2534; }
+  .mobile-toolbar button.active { color: white; border-color: #25dff4; background: #08aeca33; }
 }
 @media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; transition: none !important; } }

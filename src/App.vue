@@ -13,7 +13,6 @@ type BaseMap = 'osm' | 'dark'
 
 const modelUrl = 'https://cesium.com/downloads/cesiumjs/releases/1.132/Apps/SampleData/models/CesiumAir/Cesium_Air.glb'
 const container = ref<HTMLElement>()
-const drawerOpen = ref(false)
 const selected = ref(cities[0])
 const coordinates = ref('121.50°E · 31.24°N')
 const cameraHeight = ref('12.5 km')
@@ -73,7 +72,6 @@ function flyTo(city: City) {
     offset: new HeadingPitchRange(0, CesiumMath.toRadians(-55), city.height),
     duration: 1.6,
   })
-  drawerOpen.value = false
 }
 
 function setBaseMap(type: BaseMap) {
@@ -397,18 +395,23 @@ onBeforeUnmount(() => {
       <div><small>拾取信息</small><b>{{ pickedInfo }}</b></div>
     </section>
 
-    <button class="mobile-trigger" @click="drawerOpen = !drawerOpen">功能菜单 <span>⌃</span></button>
-    <section class="mobile-drawer" :class="{ open: drawerOpen }">
-      <button v-for="city in cities" :key="city.name" @click="flyTo(city)">{{ city.name }}</button>
-      <button @click="toggleGeoJson">GeoJSON</button>
-      <button @click="toggleModel">模型</button>
-      <button @click="playRoute">航线</button>
-      <button @click="setBaseMap(baseMap === 'osm' ? 'dark' : 'osm')">切换底图</button>
-      <button @click="setDrawMode('measure')">量距</button>
-      <button @click="setDrawMode('point')">绘点</button>
-      <button @click="setDrawMode('line')">绘线</button>
-      <button @click="setDrawMode('polygon')">绘面</button>
-      <button @click="clearSketch">清空</button>
+    <section class="mobile-toolbar">
+      <div class="mobile-group">
+        <button v-for="city in cities" :key="city.name" :class="{ active: selected.name === city.name }" @click="flyTo(city)">
+          {{ city.name }}
+        </button>
+      </div>
+      <div class="mobile-group">
+        <button :class="{ active: geoJsonVisible }" @click="toggleGeoJson">GeoJSON</button>
+        <button :class="{ active: modelVisible }" @click="toggleModel">模型</button>
+        <button :class="{ active: routePlaying }" @click="playRoute">航线</button>
+        <button @click="setBaseMap(baseMap === 'osm' ? 'dark' : 'osm')">{{ baseMap === 'osm' ? '暗色' : '标准' }}</button>
+        <button :class="{ active: drawMode === 'measure' }" @click="setDrawMode('measure')">量距</button>
+        <button :class="{ active: drawMode === 'point' }" @click="setDrawMode('point')">点</button>
+        <button :class="{ active: drawMode === 'line' }" @click="setDrawMode('line')">线</button>
+        <button :class="{ active: drawMode === 'polygon' }" @click="setDrawMode('polygon')">面</button>
+        <button @click="clearSketch">清空</button>
+      </div>
     </section>
   </main>
 </template>

@@ -9,6 +9,14 @@ export type City = {
 
 export const cities: City[] = [
   {
+    name: '武汉',
+    subtitle: '长江与汉江交汇之城',
+    lon: 114.3055,
+    lat: 30.5928,
+    height: 13500,
+    summary: '作为默认起点，展示中部城市视角、跨城巡航与基础交互能力。',
+  },
+  {
     name: '上海',
     subtitle: '陆家嘴金融中心',
     lon: 121.4998,

@@ -2,44 +2,101 @@
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import {
   BoundingSphere, Cartesian2, Cartesian3, Cartographic, Color, ConstantPositionProperty, CustomDataSource,
-  Entity, GeoJsonDataSource, HeadingPitchRange, HeightReference, Math as CesiumMath, PolylineGlowMaterialProperty,
-  ScreenSpaceEventHandler, ScreenSpaceEventType, Viewer,
+  GeoJsonDataSource, HeadingPitchRange, HeightReference, ImageryLayer, Math as CesiumMath, NearFarScalar,
+  OpenStreetMapImageryProvider, PolylineGlowMaterialProperty, ScreenSpaceEventHandler, ScreenSpaceEventType,
+  UrlTemplateImageryProvider, Viewer,
 } from 'cesium'
-import { cities, districtGeoJson } from './data'
+import { cities, districtGeoJson, type City } from './data'
 
+type DrawMode = 'none' | 'measure' | 'point' | 'line' | 'polygon'
+type BaseMap = 'osm' | 'dark'
+
+const modelUrl = 'https://cesium.com/downloads/cesiumjs/releases/1.132/Apps/SampleData/models/CesiumAir/Cesium_Air.glb'
 const container = ref<HTMLElement>()
 const drawerOpen = ref(false)
-const activeTool = ref('城市探索')
 const selected = ref(cities[0])
 const coordinates = ref('121.50°E · 31.24°N')
 const cameraHeight = ref('12.5 km')
-const measuring = ref(false)
+const activeTool = ref('城市探索')
+const drawMode = ref<DrawMode>('none')
+const baseMap = ref<BaseMap>('osm')
+const geoJsonVisible = ref(false)
+const modelVisible = ref(false)
 const routePlaying = ref(false)
+const pickedInfo = ref('点击城市标记或绘制对象查看属性')
+
 let viewer: Viewer | undefined
 let handler: ScreenSpaceEventHandler | undefined
+let baseLayer: ImageryLayer | undefined
 let geoJsonLayer: GeoJsonDataSource | undefined
 let measureSource: CustomDataSource | undefined
-let measurePoints: Cartesian3[] = []
+let drawSource: CustomDataSource | undefined
+let routeSource: CustomDataSource | undefined
+let modelSource: CustomDataSource | undefined
+let sketchPoints: Cartesian3[] = []
 
-const statusLabel = computed(() => measuring.value ? '点击地球选择两个测量点' : '系统在线 · WebGL')
+const statusLabel = computed(() => drawMode.value === 'none' ? '系统在线 · WebGL' : '点击地球添加节点')
+const drawModeLabel = computed(() => ({
+  none: '浏览',
+  measure: '距离测量',
+  point: '绘制点',
+  line: '绘制线',
+  polygon: '绘制面',
+}[drawMode.value]))
 
-function flyTo(city: typeof cities[number]) {
+function ensureSources() {
+  if (!viewer) return
+  if (!measureSource) {
+    measureSource = new CustomDataSource('measure')
+    viewer.dataSources.add(measureSource)
+  }
+  if (!drawSource) {
+    drawSource = new CustomDataSource('draw')
+    viewer.dataSources.add(drawSource)
+  }
+  if (!routeSource) {
+    routeSource = new CustomDataSource('route')
+    viewer.dataSources.add(routeSource)
+  }
+  if (!modelSource) {
+    modelSource = new CustomDataSource('model')
+    viewer.dataSources.add(modelSource)
+  }
+}
+
+function flyTo(city: City) {
   selected.value = city
   activeTool.value = city.name
+  pickedInfo.value = `${city.name}：${city.summary}`
   const target = Cartesian3.fromDegrees(city.lon, city.lat)
   viewer?.camera.flyToBoundingSphere(new BoundingSphere(target, 1), {
     offset: new HeadingPitchRange(0, CesiumMath.toRadians(-55), city.height),
-    duration: 1.8,
+    duration: 1.6,
   })
   drawerOpen.value = false
 }
 
+function setBaseMap(type: BaseMap) {
+  if (!viewer || baseMap.value === type) return
+  baseMap.value = type
+  if (baseLayer) viewer.imageryLayers.remove(baseLayer, false)
+  const provider = type === 'osm'
+    ? new OpenStreetMapImageryProvider({ url: 'https://tile.openstreetmap.org/' })
+    : new UrlTemplateImageryProvider({
+      url: 'https://a.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png',
+      credit: '© OpenStreetMap contributors © CARTO',
+    })
+  baseLayer = viewer.imageryLayers.addImageryProvider(provider, 0)
+  activeTool.value = type === 'osm' ? '标准底图' : '暗色底图'
+}
+
 async function toggleGeoJson() {
   if (!viewer) return
-  activeTool.value = '区域数据'
+  activeTool.value = 'GeoJSON 区域'
   if (geoJsonLayer) {
     viewer.dataSources.remove(geoJsonLayer, true)
     geoJsonLayer = undefined
+    geoJsonVisible.value = false
     return
   }
   geoJsonLayer = await GeoJsonDataSource.load(districtGeoJson as never, {
@@ -49,22 +106,56 @@ async function toggleGeoJson() {
     clampToGround: true,
   })
   viewer.dataSources.add(geoJsonLayer)
+  geoJsonVisible.value = true
   await viewer.flyTo(geoJsonLayer)
+}
+
+function toggleModel() {
+  if (!viewer) return
+  ensureSources()
+  activeTool.value = '模型加载'
+  modelVisible.value = !modelVisible.value
+  modelSource!.entities.removeAll()
+  if (!modelVisible.value) return
+  const entity = modelSource!.entities.add({
+    name: 'Cesium Air glTF 模型',
+    position: Cartesian3.fromDegrees(121.5062, 31.2452, 450),
+    model: {
+      uri: modelUrl,
+      scale: 2.2,
+      minimumPixelSize: 84,
+      maximumScale: 600,
+    },
+    label: {
+      text: 'glTF 模型',
+      font: '600 13px sans-serif',
+      fillColor: Color.WHITE,
+      showBackground: true,
+      backgroundColor: Color.fromCssColorString('#07111f').withAlpha(.72),
+      pixelOffset: new Cartesian2(0, -54),
+      scaleByDistance: new NearFarScalar(1000, 1, 70000, .45),
+    },
+  })
+  viewer.flyTo(entity, { duration: 1.2 })
 }
 
 function playRoute() {
   if (!viewer || routePlaying.value) return
+  ensureSources()
   routePlaying.value = true
   activeTool.value = '动态航线'
+  routeSource!.entities.removeAll()
   const points = cities.map(c => Cartesian3.fromDegrees(c.lon, c.lat, 1500))
-  const route = viewer.entities.add({
+  const route = routeSource!.entities.add({
+    name: '城市航线',
     polyline: {
       positions: points,
       width: 5,
       material: new PolylineGlowMaterialProperty({ color: Color.CYAN, glowPower: 0.22 }),
     },
   })
-  const marker = viewer.entities.add({
+  const marker = routeSource!.entities.add({
+    name: '航线当前位置',
     position: points[0],
     point: { pixelSize: 16, color: Color.WHITE, outlineColor: Color.CYAN, outlineWidth: 5 },
   })
@@ -72,63 +163,164 @@ function playRoute() {
   const next = () => {
     if (!viewer || index >= points.length) {
       routePlaying.value = false
-      window.setTimeout(() => viewer?.entities.remove(route), 1800)
-      window.setTimeout(() => viewer?.entities.remove(marker), 1800)
+      window.setTimeout(() => routeSource?.entities.remove(route), 1800)
+      window.setTimeout(() => routeSource?.entities.remove(marker), 1800)
       return
     }
     marker.position = new ConstantPositionProperty(points[index])
     flyTo(cities[index])
     index += 1
-    window.setTimeout(next, 1900)
+    window.setTimeout(next, 1750)
   }
   next()
 }
 
-function toggleMeasure() {
+function setDrawMode(mode: DrawMode) {
   if (!viewer) return
-  measuring.value = !measuring.value
-  activeTool.value = measuring.value ? '距离测量' : '城市探索'
-  measurePoints = []
-  if (!measureSource) {
-    measureSource = new CustomDataSource('measure')
-    viewer.dataSources.add(measureSource)
-  }
-  measureSource.entities.removeAll()
+  ensureSources()
+  drawMode.value = mode
+  activeTool.value = drawModeLabel.value
+  sketchPoints = []
+  if (mode === 'measure') measureSource!.entities.removeAll()
 }
 
-function measureClick(position: Cartesian2) {
-  if (!viewer || !measuring.value || !measureSource) return
-  const cartesian = viewer.scene.pickPosition(position) ?? viewer.camera.pickEllipsoid(position)
-  if (!cartesian) return
-  measurePoints.push(cartesian)
-  measureSource.entities.add({ position: cartesian, point: { pixelSize: 10, color: Color.CYAN, heightReference: HeightReference.CLAMP_TO_GROUND } })
-  if (measurePoints.length === 2) {
-    const distance = Cartesian3.distance(measurePoints[0], measurePoints[1])
-    const midpoint = Cartesian3.midpoint(measurePoints[0], measurePoints[1], new Cartesian3())
+function clearSketch() {
+  sketchPoints = []
+  measureSource?.entities.removeAll()
+  drawSource?.entities.removeAll()
+  pickedInfo.value = '绘制与测量结果已清空'
+}
+
+function pickPosition(position: Cartesian2) {
+  if (!viewer) return undefined
+  return viewer.scene.pickPosition(position) ?? viewer.camera.pickEllipsoid(position)
+}
+
+function addMeasurePoint(cartesian: Cartesian3) {
+  if (!measureSource) return
+  sketchPoints.push(cartesian)
+  measureSource.entities.add({
+    name: '测量点',
+    position: cartesian,
+    point: { pixelSize: 10, color: Color.CYAN, heightReference: HeightReference.CLAMP_TO_GROUND },
+  })
+  if (sketchPoints.length === 2) {
+    const distance = Cartesian3.distance(sketchPoints[0], sketchPoints[1])
+    const midpoint = Cartesian3.midpoint(sketchPoints[0], sketchPoints[1], new Cartesian3())
     measureSource.entities.add({
+      name: '距离测量',
       position: midpoint,
-      label: { text: `${(distance / 1000).toFixed(2)} km`, font: '600 16px sans-serif', fillColor: Color.WHITE, showBackground: true, backgroundColor: Color.fromCssColorString('#07111f').withAlpha(.8), pixelOffset: new Cartesian2(0, -18) },
-      polyline: { positions: measurePoints, width: 4, material: Color.CYAN, clampToGround: true },
+      label: {
+        text: `${(distance / 1000).toFixed(2)} km`,
+        font: '600 16px sans-serif',
+        fillColor: Color.WHITE,
+        showBackground: true,
+        backgroundColor: Color.fromCssColorString('#07111f').withAlpha(.8),
+        pixelOffset: new Cartesian2(0, -18),
+      },
+      polyline: { positions: sketchPoints, width: 4, material: Color.CYAN, clampToGround: true },
     })
-    measuring.value = false
+    pickedInfo.value = `两点距离：${(distance / 1000).toFixed(2)} km`
+    setDrawMode('none')
+  }
+}
+
+function addDrawGeometry(cartesian: Cartesian3) {
+  if (!drawSource) return
+  sketchPoints.push(cartesian)
+  const commonPoint = {
+    pixelSize: 10,
+    color: Color.fromCssColorString('#ffcf5a'),
+    outlineColor: Color.WHITE,
+    outlineWidth: 2,
+    heightReference: HeightReference.CLAMP_TO_GROUND,
+  }
+  if (drawMode.value === 'point') {
+    drawSource.entities.add({ name: '绘制点', position: cartesian, point: commonPoint })
+    pickedInfo.value = '已添加一个绘制点'
+    setDrawMode('none')
+    return
+  }
+  drawSource.entities.add({ name: '绘制节点', position: cartesian, point: commonPoint })
+  if (drawMode.value === 'line' && sketchPoints.length === 2) {
+    drawSource.entities.add({
+      name: '绘制线',
+      polyline: { positions: [...sketchPoints], width: 4, material: Color.fromCssColorString('#ffcf5a'), clampToGround: true },
+    })
+    pickedInfo.value = '已完成一条绘制线'
+    setDrawMode('none')
+  }
+  if (drawMode.value === 'polygon' && sketchPoints.length === 3) {
+    drawSource.entities.add({
+      name: '绘制面',
+      polygon: {
+        hierarchy: [...sketchPoints],
+        material: Color.fromCssColorString('#ffcf5a').withAlpha(.32),
+        outline: true,
+        outlineColor: Color.WHITE,
+        heightReference: HeightReference.CLAMP_TO_GROUND,
+      },
+    })
+    pickedInfo.value = '已完成一个三角面'
+    setDrawMode('none')
+  }
+}
+
+function handleClick(position: Cartesian2) {
+  if (!viewer) return
+  if (drawMode.value !== 'none') {
+    const cartesian = pickPosition(position)
+    if (!cartesian) return
+    if (drawMode.value === 'measure') addMeasurePoint(cartesian)
+    else addDrawGeometry(cartesian)
+    return
+  }
+  const picked = viewer.scene.pick(position)
+  if (picked?.id?.name) {
+    pickedInfo.value = picked.id.description?.getValue?.() || picked.id.name
+    activeTool.value = '点击拾取'
   }
 }
 
 onMounted(() => {
   viewer = new Viewer(container.value!, {
-    animation: false, timeline: false, geocoder: false, homeButton: false,
-    sceneModePicker: false, baseLayerPicker: false, navigationHelpButton: false,
-    fullscreenButton: false, infoBox: false, selectionIndicator: false,
+    animation: false,
+    timeline: false,
+    geocoder: false,
+    homeButton: false,
+    sceneModePicker: false,
+    baseLayerPicker: false,
+    navigationHelpButton: false,
+    fullscreenButton: false,
+    infoBox: false,
+    selectionIndicator: false,
   })
   viewer.scene.globe.enableLighting = true
+  viewer.scene.pickTranslucentDepth = true
   viewer.resolutionScale = Math.min(window.devicePixelRatio, 1.5)
+  ensureSources()
   cities.forEach(city => viewer!.entities.add({
+    name: city.name,
+    description: `${city.name}：${city.summary}`,
     position: Cartesian3.fromDegrees(city.lon, city.lat),
-    point: { pixelSize: 12, color: Color.fromCssColorString('#00d4ff'), outlineColor: Color.WHITE, outlineWidth: 2, heightReference: HeightReference.CLAMP_TO_GROUND },
-    label: { text: city.name, font: '600 14px sans-serif', fillColor: Color.WHITE, pixelOffset: new Cartesian2(0, -24), showBackground: true, backgroundColor: Color.fromCssColorString('#07111f').withAlpha(.68) },
+    point: {
+      pixelSize: 12,
+      color: Color.fromCssColorString('#00d4ff'),
+      outlineColor: Color.WHITE,
+      outlineWidth: 2,
+      heightReference: HeightReference.CLAMP_TO_GROUND,
+    },
+    label: {
+      text: city.name,
+      font: '600 14px sans-serif',
+      fillColor: Color.WHITE,
+      pixelOffset: new Cartesian2(0, -24),
+      showBackground: true,
+      backgroundColor: Color.fromCssColorString('#07111f').withAlpha(.68),
+    },
   }))
   handler = new ScreenSpaceEventHandler(viewer.scene.canvas)
-  handler.setInputAction((event: { position: Cartesian2 }) => measureClick(event.position), ScreenSpaceEventType.LEFT_CLICK)
+  handler.setInputAction((event: { position: Cartesian2 }) => handleClick(event.position), ScreenSpaceEventType.LEFT_CLICK)
   viewer.camera.changed.addEventListener(() => {
     if (!viewer) return
     const c = Cartographic.fromCartesian(viewer.camera.position)
@@ -147,11 +339,18 @@ onBeforeUnmount(() => {
 <template>
   <main class="shell">
     <div ref="container" class="globe" />
+
     <header class="topbar">
-      <div class="brand"><span class="brand-mark">CE</span><div><b>City Explorer</b><small>CESIUM LAB · 2026</small></div></div>
+      <div class="brand">
+        <span class="brand-mark">CE</span>
+        <div>
+          <b>City Explorer</b>
+          <small>CESIUM LAB · 2026</small>
+        </div>
+      </div>
       <div class="top-actions">
         <span class="live"><i />{{ statusLabel }}</span>
-        <button class="icon-btn" aria-label="重置视角" @click="flyTo(cities[0])">⌖</button>
+        <button class="icon-btn" aria-label="重置视角" title="重置视角" @click="flyTo(cities[0])">⌖</button>
       </div>
     </header>
 
@@ -161,9 +360,9 @@ onBeforeUnmount(() => {
         <span>0{{ i + 1 }}</span>{{ city.name }}
       </button>
       <div class="rail-line" />
-      <button @click="toggleGeoJson"><span>05</span>区域</button>
-      <button @click="playRoute"><span>06</span>航线</button>
-      <button @click="toggleMeasure"><span>07</span>测量</button>
+      <button @click="toggleGeoJson"><span>05</span>{{ geoJsonVisible ? '隐藏区域' : 'GeoJSON' }}</button>
+      <button @click="toggleModel"><span>06</span>{{ modelVisible ? '隐藏模型' : '模型' }}</button>
+      <button @click="playRoute"><span>07</span>航线</button>
     </aside>
 
     <section class="hero-card">
@@ -171,22 +370,45 @@ onBeforeUnmount(() => {
       <h1>{{ selected.name }}</h1>
       <h2>{{ selected.subtitle }}</h2>
       <div class="rule" />
-      <p class="description">基于真实经纬度构建的三维城市探索体验。拖动地球、选择城市，或开启空间数据能力演示。</p>
-      <button class="primary" @click="playRoute">{{ routePlaying ? '演示进行中…' : '开始自动巡航' }} <span>→</span></button>
+      <p class="description">{{ selected.summary }}</p>
+      <button class="primary" @click="playRoute">{{ routePlaying ? '演示进行中' : '开始自动巡航' }} <span>→</span></button>
+    </section>
+
+    <section class="tool-panel">
+      <div class="panel-row">
+        <span>底图</span>
+        <button :class="{ active: baseMap === 'osm' }" @click="setBaseMap('osm')">标准</button>
+        <button :class="{ active: baseMap === 'dark' }" @click="setBaseMap('dark')">暗色</button>
+      </div>
+      <div class="panel-row">
+        <span>绘制</span>
+        <button :class="{ active: drawMode === 'point' }" @click="setDrawMode('point')">点</button>
+        <button :class="{ active: drawMode === 'line' }" @click="setDrawMode('line')">线</button>
+        <button :class="{ active: drawMode === 'polygon' }" @click="setDrawMode('polygon')">面</button>
+        <button :class="{ active: drawMode === 'measure' }" @click="setDrawMode('measure')">量距</button>
+      </div>
+      <button class="ghost" @click="clearSketch">清空绘制</button>
     </section>
 
     <section class="stats">
       <div><small>经纬度</small><b>{{ coordinates }}</b></div>
       <div><small>相机高度</small><b>{{ cameraHeight }}</b></div>
       <div><small>当前模式</small><b>{{ activeTool }}</b></div>
+      <div><small>拾取信息</small><b>{{ pickedInfo }}</b></div>
     </section>
 
     <button class="mobile-trigger" @click="drawerOpen = !drawerOpen">功能菜单 <span>⌃</span></button>
     <section class="mobile-drawer" :class="{ open: drawerOpen }">
       <button v-for="city in cities" :key="city.name" @click="flyTo(city)">{{ city.name }}</button>
-      <button @click="toggleGeoJson">区域数据</button>
-      <button @click="playRoute">自动航线</button>
-      <button @click="toggleMeasure">距离测量</button>
+      <button @click="toggleGeoJson">GeoJSON</button>
+      <button @click="toggleModel">模型</button>
+      <button @click="playRoute">航线</button>
+      <button @click="setBaseMap(baseMap === 'osm' ? 'dark' : 'osm')">切换底图</button>
+      <button @click="setDrawMode('measure')">量距</button>
+      <button @click="setDrawMode('point')">绘点</button>
+      <button @click="setDrawMode('line')">绘线</button>
+      <button @click="setDrawMode('polygon')">绘面</button>
+      <button @click="clearSketch">清空</button>
     </section>
   </main>
 </template>

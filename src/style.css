@@ -1,0 +1,52 @@
+:root { font-family: Inter, "PingFang SC", "Microsoft YaHei", sans-serif; color: #ecfaff; background: #07111f; font-synthesis: none; }
+* { box-sizing: border-box; }
+html, body, #app { width: 100%; height: 100%; margin: 0; overflow: hidden; }
+button { font: inherit; }
+.shell, .globe { position: absolute; inset: 0; }
+.shell { min-height: 100dvh; background: radial-gradient(circle at 70% 40%, #112d45, #07111f); }
+.globe::after { content: ""; position: absolute; inset: 0; pointer-events: none; background: linear-gradient(90deg, rgba(3,12,23,.88), transparent 42%, transparent 76%, rgba(3,12,23,.22)); }
+.cesium-viewer-bottom { display: none; }
+.topbar { position: fixed; z-index: 4; top: 0; left: 0; right: 0; height: 86px; padding: 20px 34px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid rgba(164,225,239,.13); background: linear-gradient(#07111fc9, transparent); }
+.brand { display: flex; gap: 12px; align-items: center; text-transform: uppercase; letter-spacing: .12em; }
+.brand-mark { width: 42px; height: 42px; display: grid; place-items: center; border: 1px solid #32d9f2; color: #72efff; font-weight: 800; }
+.brand b { display: block; font-size: 15px; }
+.brand small { display: block; color: #6e8c9f; font-size: 9px; margin-top: 5px; }
+.top-actions { display: flex; gap: 20px; align-items: center; }
+.live { font-size: 11px; letter-spacing: .08em; color: #9ab3c1; }
+.live i { display: inline-block; width: 6px; height: 6px; margin-right: 8px; border-radius: 50%; background: #41f1b2; box-shadow: 0 0 12px #41f1b2; }
+.icon-btn { width: 38px; height: 38px; color: white; border: 1px solid #294656; background: #0d2130cc; cursor: pointer; }
+.rail { position: fixed; z-index: 4; left: 32px; top: 130px; bottom: 42px; width: 86px; display: flex; flex-direction: column; gap: 4px; }
+.rail-label { color: #527283; font-size: 9px; letter-spacing: .25em; margin-bottom: 12px; }
+.rail button { display: flex; align-items: center; gap: 10px; height: 38px; padding: 0; color: #7896a6; border: 0; background: none; cursor: pointer; text-align: left; }
+.rail button span { font: 9px monospace; color: #3c5e70; }
+.rail button:hover, .rail button.active { color: white; }
+.rail button.active::before { content: ""; width: 2px; height: 21px; background: #24dbf2; box-shadow: 0 0 12px #24dbf2; margin-left: -12px; }
+.rail-line { height: 1px; margin: 10px 0; background: #234050; }
+.hero-card { position: fixed; z-index: 3; left: 148px; top: 24%; width: 330px; }
+.hero-card > p:first-child { color: #3fe4f7; font-size: 10px; letter-spacing: .25em; }
+.hero-card h1 { margin: 13px 0 0; font-size: clamp(60px, 7vw, 102px); line-height: .92; letter-spacing: -.07em; text-shadow: 0 8px 50px #03111d; }
+.hero-card h2 { margin: 13px 0; color: #a9c2ce; font-size: 14px; font-weight: 400; letter-spacing: .18em; }
+.rule { width: 34px; height: 2px; margin: 24px 0; background: #25dff4; }
+.description { color: #8ca5b2; font-size: 12px; line-height: 1.85; }
+.primary { width: 200px; margin-top: 18px; padding: 13px 15px; display: flex; justify-content: space-between; border: 1px solid #1fcde5; color: white; background: #08aeca22; cursor: pointer; }
+.stats { position: fixed; z-index: 3; right: 28px; bottom: 26px; display: flex; border: 1px solid #284453; background: #071521c9; backdrop-filter: blur(10px); }
+.stats div { min-width: 135px; padding: 13px 18px; border-right: 1px solid #284453; }
+.stats div:last-child { border: 0; }
+.stats small, .stats b { display: block; }
+.stats small { margin-bottom: 6px; color: #5f8193; font-size: 9px; letter-spacing: .14em; }
+.stats b { font: 11px monospace; color: #c2dce7; }
+.mobile-trigger, .mobile-drawer { display: none; }
+@media (max-width: 720px) {
+  .topbar { height: 70px; padding: 14px 16px; }
+  .live, .rail, .stats { display: none; }
+  .brand-mark { width: 36px; height: 36px; }
+  .hero-card { left: 20px; right: 20px; top: auto; bottom: 88px; width: auto; pointer-events: none; }
+  .hero-card h1 { font-size: 62px; }
+  .hero-card .description, .hero-card .rule, .hero-card .primary { display: none; }
+  .globe::after { background: linear-gradient(0deg, rgba(3,12,23,.8), transparent 48%); }
+  .mobile-trigger { display: flex; position: fixed; z-index: 7; left: 14px; right: 14px; bottom: max(14px, env(safe-area-inset-bottom)); height: 54px; padding: 0 18px; align-items: center; justify-content: space-between; border: 1px solid #2caec2; color: white; background: #09202edb; backdrop-filter: blur(14px); }
+  .mobile-drawer { display: grid; position: fixed; z-index: 6; left: 14px; right: 14px; bottom: -280px; grid-template-columns: repeat(2, 1fr); gap: 8px; padding: 14px 14px 78px; border: 1px solid #244f61; background: #071824ee; transition: bottom .25s ease; }
+  .mobile-drawer.open { bottom: 0; }
+  .mobile-drawer button { min-height: 44px; color: #dff9ff; border: 1px solid #234b5b; background: #0b2534; }
+}
+@media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; transition: none !important; } }

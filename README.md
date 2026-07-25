@@ -1,6 +1,6 @@
 # Cesium City Explorer
 
-一个用于面试演示的 Vue 3 + TypeScript + Cesium 纯前端三维城市探索项目。
+一个用于学习Cesium的 Vue 3 + TypeScript + Cesium 纯前端三维城市探索项目。
 
 ## 功能
 

@@ -74,10 +74,10 @@ function flyTo(city: City) {
   })
 }
 
-function setBaseMap(type: BaseMap) {
-  if (!viewer || baseMap.value === type) return
+function setBaseMap(type: BaseMap, force = false) {
+  if (!viewer || (!force && baseMap.value === type)) return
   baseMap.value = type
-  if (baseLayer) viewer.imageryLayers.remove(baseLayer, false)
+  viewer.imageryLayers.removeAll(true)
   const provider = type === 'osm'
     ? new OpenStreetMapImageryProvider({ url: 'https://tile.openstreetmap.org/' })
     : new UrlTemplateImageryProvider({
@@ -296,6 +296,7 @@ onMounted(() => {
   viewer.scene.globe.enableLighting = true
   viewer.scene.pickTranslucentDepth = true
   viewer.resolutionScale = Math.min(window.devicePixelRatio, 1.5)
+  setBaseMap(baseMap.value, true)
   ensureSources()
   cities.forEach(city => viewer!.entities.add({
     name: city.name,

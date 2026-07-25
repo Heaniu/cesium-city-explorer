@@ -1,11 +1,4 @@
-export type City = {
-  name: string
-  subtitle: string
-  lon: number
-  lat: number
-  height: number
-  summary: string
-}
+import type { City } from './types'
 
 export const cities: City[] = [
   {

@@ -1,4 +1,5 @@
 import type { City } from './types'
+import wuhanBoundary from './assets/wuhan-boundary.json'
 
 export const cities: City[] = [
   {
@@ -43,19 +44,4 @@ export const cities: City[] = [
   },
 ]
 
-export const districtGeoJson = {
-  type: 'FeatureCollection',
-  features: [
-    {
-      type: 'Feature',
-      properties: { name: '浦东演示区', value: '数字城市核心区' },
-      geometry: {
-        type: 'Polygon',
-        coordinates: [[
-          [121.47, 31.20], [121.58, 31.20], [121.59, 31.28],
-          [121.48, 31.29], [121.47, 31.20],
-        ]],
-      },
-    },
-  ],
-}
+export const districtGeoJson = wuhanBoundary

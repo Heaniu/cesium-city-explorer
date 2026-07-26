@@ -6,7 +6,7 @@ import 'element-plus/theme-chalk/el-popper.css'
 import 'element-plus/theme-chalk/el-popover.css'
 import 'element-plus/theme-chalk/el-tag.css'
 import 'cesium/Build/Cesium/Widgets/widgets.css'
-import './style.css'
+import './style.scss'
 import App from './App.vue'
 
 createApp(App)

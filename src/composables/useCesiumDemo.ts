@@ -60,6 +60,7 @@ export function useCesiumDemo(container: Ref<HTMLElement | undefined>) {
   const activeTool = ref('城市探索')
   const drawMode = ref<DrawMode>('none')
   const baseMap = ref<BaseMap>('osm')
+  const showCityInfo = ref(true)
   const geoJsonVisible = ref(false)
   const modelVisible = ref(false)
   const tilesVisible = ref(false)
@@ -121,6 +122,7 @@ export function useCesiumDemo(container: Ref<HTMLElement | undefined>) {
   }
 
   function flyTo(city: City) {
+    showCityInfo.value = true
     selected.value = city
     activeTool.value = city.name
     pickedInfo.value = `${city.name}：${city.summary}`
@@ -134,6 +136,7 @@ export function useCesiumDemo(container: Ref<HTMLElement | undefined>) {
 
   async function toggleGeoJson() {
     if (!viewer) return
+    showCityInfo.value = false
     activeTool.value = 'GeoJSON 区域'
     if (geoJsonLayer) {
       viewer.dataSources.remove(geoJsonLayer, true)
@@ -156,6 +159,7 @@ export function useCesiumDemo(container: Ref<HTMLElement | undefined>) {
   function toggleModel() {
     if (!viewer) return
     ensureSources()
+    showCityInfo.value = false
     activeTool.value = '模型加载'
     modelVisible.value = !modelVisible.value
     modelSource!.entities.removeAll()
@@ -185,6 +189,7 @@ export function useCesiumDemo(container: Ref<HTMLElement | undefined>) {
 
   async function toggle3DTiles() {
     if (!viewer) return
+    showCityInfo.value = false
     activeTool.value = '3D Tiles'
     tilesVisible.value = !tilesVisible.value
 
@@ -427,6 +432,7 @@ export function useCesiumDemo(container: Ref<HTMLElement | undefined>) {
     selected,
     setBaseMap,
     setDrawMode,
+    showCityInfo,
     statusLabel,
     tilesVisible,
     toggle3DTiles,

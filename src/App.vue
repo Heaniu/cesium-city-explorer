@@ -22,6 +22,7 @@ const {
   selected,
   setBaseMap,
   setDrawMode,
+  showCityInfo,
   statusLabel,
   tilesVisible,
   toggle3DTiles,
@@ -52,7 +53,7 @@ onMounted(initViewer)
 
     <aside class="rail">
       <span class="rail-label">EXPLORE</span>
-      <button v-for="(city, i) in cities" :key="city.name" :class="{ active: selected.name === city.name }" @click="flyTo(city)">
+      <button v-for="(city, i) in cities" :key="city.name" :class="{ active: showCityInfo && selected.name === city.name }" @click="flyTo(city)">
         <span>0{{ i + 1 }}</span>{{ city.name }}
       </button>
       <div class="rail-line" />
@@ -62,7 +63,7 @@ onMounted(initViewer)
       <button @click="playRoute"><span>09</span>航线</button>
     </aside>
 
-    <section class="hero-card">
+    <section v-if="showCityInfo" class="hero-card">
       <p>FEATURED LOCATION</p>
       <h1>{{ selected.name }}</h1>
       <h2>{{ selected.subtitle }}</h2>
@@ -96,7 +97,7 @@ onMounted(initViewer)
 
     <section class="mobile-toolbar">
       <div class="mobile-group">
-        <button v-for="city in cities" :key="city.name" :class="{ active: selected.name === city.name }" @click="flyTo(city)">
+        <button v-for="city in cities" :key="city.name" :class="{ active: showCityInfo && selected.name === city.name }" @click="flyTo(city)">
           {{ city.name }}
         </button>
       </div>

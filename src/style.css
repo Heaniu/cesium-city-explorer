@@ -171,7 +171,7 @@ button,
   margin-left: -12px;
 }
 
-.rail .el-button.is-text:not(.is-disabled):hover {
+.el-button.is-text:not(.is-disabled):hover {
   background-color: inherit;
 }
 
@@ -451,7 +451,7 @@ button,
     display: none;
   }
 
-  .mobile-toolbar button {
+  .mobile-group button {
     flex: 0 0 auto;
     min-width: 64px;
     min-height: 40px;
@@ -461,11 +461,17 @@ button,
     background: #0b2534;
   }
 
-  .mobile-toolbar .el-button {
+  .mobile-group .el-button {
     margin-left: 0;
   }
 
-  .mobile-toolbar button.active {
+  .mobile-group .el-button:hover {
+    color: inherit;
+    border-color: inherit;
+    background-color: inherit;
+  }
+
+  .mobile-group button.active {
     color: white;
     border-color: #25dff4;
     background: #08aeca33;

@@ -30,7 +30,7 @@ const modelUrl = 'https://cesium.com/downloads/cesiumjs/releases/1.132/Apps/Samp
 const tilesetUrl = 'https://cesium.com/downloads/cesiumjs/releases/1.132/Apps/SampleData/Cesium3DTiles/Tilesets/Tileset/tileset.json'
 const wuhanBoundaryCenter = Cartesian3.fromDegrees(114.348204, 30.623025, 2400)
 const modelPosition = Cartesian3.fromDegrees(121.5062, 31.2452, 450)
-const modelTopPosition = Cartesian3.fromDegrees(121.5062, 31.2452, 1350)
+const modelTopPosition = Cartesian3.fromDegrees(121.5062, 31.2452, 550)
 type LayerDemo = 'geojson' | 'model' | 'tiles'
 
 const layerDemoInfo: Record<LayerDemo, { title: string, meta: string, description: string }> = {
@@ -231,7 +231,7 @@ export function useCesiumDemo(container: Ref<HTMLElement | undefined>) {
         scaleByDistance: new NearFarScalar(1000, 1, 70000, .45),
       },
     })
-    await viewer.flyTo(modelEntity, { duration: 1.2 })
+    await viewer.flyTo(modelEntity, { duration: 1.2, offset: new HeadingPitchRange(0, CesiumMath.toRadians(-35), 1200) })
     showLayerBubble('model', modelTopPosition)
   }
 
@@ -261,24 +261,23 @@ export function useCesiumDemo(container: Ref<HTMLElement | undefined>) {
 
     const sphere = tileset.boundingSphere
 
-    await new Promise<void>((resolve) => {
-      viewer!.camera.flyToBoundingSphere(sphere, {
-        offset: new HeadingPitchRange(
-          0,
-          CesiumMath.toRadians(-35),
-          sphere.radius * 4,
-        ),
-        duration: 1.4,
-        complete: resolve,
-        cancel: resolve,
-      })
+    viewer!.camera.flyToBoundingSphere(sphere, {
+      offset: new HeadingPitchRange(
+        0,
+        CesiumMath.toRadians(-35),
+        sphere.radius * 4,
+      ),
+      duration: 1.4,
+      complete: () => {
+        showLayerBubble('tiles', Cartesian3.add(
+          sphere.center,
+          new Cartesian3(0, 0, sphere.radius / 2),
+          new Cartesian3(),
+        ))
+      },
     })
 
-    showLayerBubble('tiles', Cartesian3.add(
-      sphere.center,
-      new Cartesian3(0, 0, sphere.radius),
-      new Cartesian3(),
-    ))
+
   }
 
   function showLayerBubble(layer: LayerDemo, anchor: Cartesian3) {

@@ -15,6 +15,8 @@ const {
   flyTo,
   geoJsonVisible,
   initViewer,
+  layerBubble,
+  layerBubbleStyle,
   modelVisible,
   pickedInfo,
   playRoute,
@@ -72,6 +74,13 @@ onMounted(initViewer)
       <button class="primary" @click="playRoute">{{ routePlaying ? '演示进行中' : '开始自动巡航' }} <span>→</span></button>
     </section>
 
+    <section v-if="layerBubble" class="layer-popover" :style="layerBubbleStyle" @click.stop>
+      <p>{{ layerBubble.meta }}</p>
+      <h2>{{ layerBubble.title }}</h2>
+      <div class="rule" />
+      <p>{{ layerBubble.description }}</p>
+    </section>
+
     <section class="tool-panel">
       <div class="panel-row">
         <span>底图</span>
@@ -102,9 +111,9 @@ onMounted(initViewer)
         </button>
       </div>
       <div class="mobile-group">
-        <button :class="{ active: geoJsonVisible }" @click="toggleGeoJson">GeoJSON</button>
-        <button :class="{ active: modelVisible }" @click="toggleModel">模型</button>
-        <button :class="{ active: tilesVisible }" @click="toggle3DTiles">3D Tiles</button>
+        <button @click="toggleGeoJson">GeoJSON</button>
+        <button @click="toggleModel">模型</button>
+        <button @click="toggle3DTiles">3D Tiles</button>
         <button :class="{ active: routePlaying }" @click="playRoute">航线</button>
         <button @click="setBaseMap(baseMap === 'osm' ? 'dark' : 'osm')">{{ baseMap === 'osm' ? '暗色' : '标准' }}</button>
         <button :class="{ active: drawMode === 'measure' }" @click="setDrawMode('measure')">量距</button>

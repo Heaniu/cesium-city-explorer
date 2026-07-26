@@ -232,6 +232,40 @@ button {
   cursor: pointer;
 }
 
+.layer-popover {
+  position: fixed;
+  z-index: 4;
+  width: min(340px, calc(100vw - 28px));
+  padding: 18px 20px;
+  border: 1px solid #284453;
+  background: #071521d8;
+  backdrop-filter: blur(12px);
+  box-shadow: 0 18px 60px rgba(0, 0, 0, .28);
+  transform: translate(-50%, -100%);
+  pointer-events: auto;
+}
+
+.layer-popover p:first-child {
+  margin: 0;
+  color: #3fe4f7;
+  font-size: 10px;
+  letter-spacing: .22em;
+  text-transform: uppercase;
+}
+
+.layer-popover h2 {
+  margin: 12px 0 0;
+  font-size: 26px;
+  line-height: 1.15;
+}
+
+.layer-popover p:last-child {
+  margin: 0;
+  color: #9fb6c4;
+  font-size: 12px;
+  line-height: 1.8;
+}
+
 .tool-panel {
   position: fixed;
   z-index: 4;
@@ -359,6 +393,15 @@ button {
   .hero-card .rule,
   .hero-card .primary {
     display: none;
+  }
+
+  .layer-popover {
+    width: min(320px, calc(100vw - 28px));
+    padding: 14px 16px;
+  }
+
+  .layer-popover h2 {
+    font-size: 20px;
   }
 
   .globe::after {

@@ -4,10 +4,12 @@ import {
   Cartesian2,
   Cartesian3,
   Cartographic,
+  Cesium3DTileStyle,
   Cesium3DTileset,
   Color,
   ConstantPositionProperty,
   CustomDataSource,
+  Entity,
   GeoJsonDataSource,
   HeadingPitchRange,
   HeightReference,
@@ -15,6 +17,7 @@ import {
   NearFarScalar,
   OpenStreetMapImageryProvider,
   PolylineGlowMaterialProperty,
+  SceneTransforms,
   ScreenSpaceEventHandler,
   ScreenSpaceEventType,
   UrlTemplateImageryProvider,
@@ -25,6 +28,28 @@ import type { BaseMap, City, DrawMode } from '../types'
 
 const modelUrl = 'https://cesium.com/downloads/cesiumjs/releases/1.132/Apps/SampleData/models/CesiumAir/Cesium_Air.glb'
 const tilesetUrl = 'https://cesium.com/downloads/cesiumjs/releases/1.132/Apps/SampleData/Cesium3DTiles/Tilesets/Tileset/tileset.json'
+const wuhanBoundaryCenter = Cartesian3.fromDegrees(114.348204, 30.623025, 2400)
+const modelPosition = Cartesian3.fromDegrees(121.5062, 31.2452, 450)
+const modelTopPosition = Cartesian3.fromDegrees(121.5062, 31.2452, 1350)
+type LayerDemo = 'geojson' | 'model' | 'tiles'
+
+const layerDemoInfo: Record<LayerDemo, { title: string, meta: string, description: string }> = {
+  geojson: {
+    title: '武汉市边界 GeoJSON',
+    meta: 'GeoJsonDataSource',
+    description: '加载本地武汉市行政区边界数据，演示面数据展示、填充样式、描边样式和贴地渲染。',
+  },
+  model: {
+    title: 'glTF 单体模型',
+    meta: 'Entity Model',
+    description: '加载一个 glTF 飞机模型，演示单体三维模型定位、缩放、标签和相机飞行。',
+  },
+  tiles: {
+    title: '3D Tiles 瓦片数据',
+    meta: 'Cesium3DTileset',
+    description: '加载 Cesium 3D Tiles 示例数据，演示大体量三维瓦片数据的流式加载与包围球相机定位。',
+  },
+}
 
 function createViewer(container: HTMLElement) {
   return new Viewer(container, {
@@ -61,6 +86,8 @@ export function useCesiumDemo(container: Ref<HTMLElement | undefined>) {
   const drawMode = ref<DrawMode>('none')
   const baseMap = ref<BaseMap>('osm')
   const showCityInfo = ref(true)
+  const activeLayerDemo = ref<LayerDemo | null>(null)
+  const layerBubblePosition = ref({ x: 0, y: 0 })
   const geoJsonVisible = ref(false)
   const modelVisible = ref(false)
   const tilesVisible = ref(false)
@@ -74,10 +101,18 @@ export function useCesiumDemo(container: Ref<HTMLElement | undefined>) {
   let drawSource: CustomDataSource | undefined
   let routeSource: CustomDataSource | undefined
   let modelSource: CustomDataSource | undefined
+  let modelEntity: Entity | undefined
   let tileset: Cesium3DTileset | undefined
+  let layerBubbleAnchor: Cartesian3 | undefined
+  let removePostRenderListener: (() => void) | undefined
   let sketchPoints: Cartesian3[] = []
 
   const statusLabel = computed(() => drawMode.value === 'none' ? '系统在线 · WebGL' : '点击地球添加节点')
+  const layerBubble = computed(() => activeLayerDemo.value ? layerDemoInfo[activeLayerDemo.value] : null)
+  const layerBubbleStyle = computed(() => ({
+    left: `${layerBubblePosition.value.x}px`,
+    top: `${layerBubblePosition.value.y}px`,
+  }))
   const drawModeLabel = computed(() => ({
     none: '浏览',
     measure: '距离测量',
@@ -123,6 +158,8 @@ export function useCesiumDemo(container: Ref<HTMLElement | undefined>) {
 
   function flyTo(city: City) {
     showCityInfo.value = true
+    activeLayerDemo.value = null
+    layerBubbleAnchor = undefined
     selected.value = city
     activeTool.value = city.name
     pickedInfo.value = `${city.name}：${city.summary}`
@@ -137,42 +174,54 @@ export function useCesiumDemo(container: Ref<HTMLElement | undefined>) {
   async function toggleGeoJson() {
     if (!viewer) return
     showCityInfo.value = false
+    activeLayerDemo.value = 'geojson'
     activeTool.value = 'GeoJSON 区域'
     if (geoJsonLayer) {
       viewer.dataSources.remove(geoJsonLayer, true)
       geoJsonLayer = undefined
       geoJsonVisible.value = false
+      activeLayerDemo.value = null
+      layerBubbleAnchor = undefined
       return
     }
 
     geoJsonLayer = await GeoJsonDataSource.load(districtGeoJson as never, {
-      fill: Color.fromCssColorString('#00d4ff').withAlpha(0.26),
-      stroke: Color.fromCssColorString('#6ee7ff'),
-      strokeWidth: 3,
+      fill: Color.fromCssColorString('#ffd166').withAlpha(0.42),
+      stroke: Color.fromCssColorString('#fff3b0'),
+      strokeWidth: 5,
       clampToGround: true,
     })
     viewer.dataSources.add(geoJsonLayer)
     geoJsonVisible.value = true
     await viewer.flyTo(geoJsonLayer)
+    showLayerBubble('geojson', wuhanBoundaryCenter)
   }
 
   function toggleModel() {
     if (!viewer) return
     ensureSources()
     showCityInfo.value = false
+    activeLayerDemo.value = 'model'
     activeTool.value = '模型加载'
     modelVisible.value = !modelVisible.value
     modelSource!.entities.removeAll()
-    if (!modelVisible.value) return
+    modelEntity = undefined
+    if (!modelVisible.value) {
+      activeLayerDemo.value = null
+      layerBubbleAnchor = undefined
+      return
+    }
 
-    const entity = modelSource!.entities.add({
+    modelEntity = modelSource!.entities.add({
       name: 'Cesium Air glTF 模型',
-      position: Cartesian3.fromDegrees(121.5062, 31.2452, 450),
+      position: modelPosition,
       model: {
         uri: modelUrl,
         scale: 2.2,
         minimumPixelSize: 84,
         maximumScale: 600,
+        silhouetteColor: Color.fromCssColorString('#ffd166'),
+        silhouetteSize: 3,
       },
       label: {
         text: 'glTF 模型',
@@ -184,12 +233,14 @@ export function useCesiumDemo(container: Ref<HTMLElement | undefined>) {
         scaleByDistance: new NearFarScalar(1000, 1, 70000, .45),
       },
     })
-    viewer.flyTo(entity, { duration: 1.2 })
+    viewer.flyTo(modelEntity, { duration: 1.2 })
+    showLayerBubble('model', modelTopPosition)
   }
 
   async function toggle3DTiles() {
     if (!viewer) return
     showCityInfo.value = false
+    activeLayerDemo.value = 'tiles'
     activeTool.value = '3D Tiles'
     tilesVisible.value = !tilesVisible.value
 
@@ -199,14 +250,24 @@ export function useCesiumDemo(container: Ref<HTMLElement | undefined>) {
         tileset = undefined
       }
       pickedInfo.value = '3D Tiles 已隐藏'
+      activeLayerDemo.value = null
+      layerBubbleAnchor = undefined
       return
     }
 
     tileset = await Cesium3DTileset.fromUrl(tilesetUrl)
+    tileset.style = new Cesium3DTileStyle({
+      color: "color('#ffd166', 0.78)",
+    })
     viewer.scene.primitives.add(tileset)
     pickedInfo.value = '已加载 3D Tiles 示例数据'
 
     const sphere = tileset.boundingSphere
+    showLayerBubble('tiles', Cartesian3.add(
+      sphere.center,
+      new Cartesian3(0, 0, sphere.radius),
+      new Cartesian3(),
+    ))
     viewer.camera.flyToBoundingSphere(sphere, {
       offset: new HeadingPitchRange(
         0,
@@ -215,6 +276,47 @@ export function useCesiumDemo(container: Ref<HTMLElement | undefined>) {
       ),
       duration: 1.4,
     })
+  }
+
+  function showLayerBubble(layer: LayerDemo, anchor: Cartesian3) {
+    activeLayerDemo.value = layer
+    layerBubbleAnchor = anchor
+    updateLayerBubblePosition()
+    startLayerBubbleTracking()
+  }
+
+  function updateLayerBubblePosition() {
+    if (!viewer || !layerBubbleAnchor) return
+    const windowPosition = SceneTransforms.worldToWindowCoordinates(viewer.scene, layerBubbleAnchor)
+    if (!windowPosition) return
+    layerBubblePosition.value = {
+      x: windowPosition.x,
+      y: windowPosition.y - 16,
+    }
+  }
+
+  function startLayerBubbleTracking() {
+    if (!viewer || removePostRenderListener) return
+    removePostRenderListener = viewer.scene.postRender.addEventListener(updateLayerBubblePosition)
+  }
+
+  function stopLayerBubbleTracking() {
+    removePostRenderListener?.()
+    removePostRenderListener = undefined
+  }
+
+  function closeLayerBubble() {
+    activeLayerDemo.value = null
+    layerBubbleAnchor = undefined
+    stopLayerBubbleTracking()
+  }
+
+  function isActiveLayerPick(picked: { id?: Entity, primitive?: unknown } | undefined) {
+    if (!activeLayerDemo.value || !picked) return false
+    if (activeLayerDemo.value === 'geojson') return !!picked.id && geoJsonLayer?.entities.values.includes(picked.id)
+    if (activeLayerDemo.value === 'model') return picked.id === modelEntity
+    if (activeLayerDemo.value === 'tiles') return picked.primitive === tileset
+    return false
   }
 
   function playRoute() {
@@ -243,14 +345,14 @@ export function useCesiumDemo(container: Ref<HTMLElement | undefined>) {
     const next = () => {
       if (!viewer || index >= points.length) {
         routePlaying.value = false
-        window.setTimeout(() => routeSource?.entities.remove(route), 1800)
-        window.setTimeout(() => routeSource?.entities.remove(marker), 1800)
+        window.setTimeout(() => routeSource?.entities.remove(route), 2800)
+        window.setTimeout(() => routeSource?.entities.remove(marker), 2800)
         return
       }
       marker.position = new ConstantPositionProperty(points[index])
       flyTo(cities[index])
       index += 1
-      window.setTimeout(next, 1750)
+      window.setTimeout(next, 2750)
     }
     next()
   }
@@ -359,10 +461,17 @@ export function useCesiumDemo(container: Ref<HTMLElement | undefined>) {
     }
 
     const picked = viewer.scene.pick(position)
+    if (isActiveLayerPick(picked)) {
+      updateLayerBubblePosition()
+      return
+    }
     if (picked?.id?.name) {
       pickedInfo.value = picked.id.description?.getValue?.() || picked.id.name
       activeTool.value = '点击拾取'
+      if (picked.id !== modelEntity) closeLayerBubble()
+      return
     }
+    if (picked?.primitive !== tileset) closeLayerBubble()
   }
 
   function addCityMarkers() {
@@ -411,11 +520,13 @@ export function useCesiumDemo(container: Ref<HTMLElement | undefined>) {
 
   onBeforeUnmount(() => {
     handler?.destroy()
+    stopLayerBubbleTracking()
     viewer?.destroy()
   })
 
   return {
     activeTool,
+    activeLayerDemo,
     baseMap,
     cameraHeight,
     cities,
@@ -425,6 +536,8 @@ export function useCesiumDemo(container: Ref<HTMLElement | undefined>) {
     flyTo,
     geoJsonVisible,
     initViewer,
+    layerBubble,
+    layerBubbleStyle,
     modelVisible,
     pickedInfo,
     playRoute,

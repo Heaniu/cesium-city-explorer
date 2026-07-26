@@ -200,7 +200,16 @@ export function useCesiumDemo(container: Ref<HTMLElement | undefined>) {
     tileset = await Cesium3DTileset.fromUrl(tilesetUrl)
     viewer.scene.primitives.add(tileset)
     pickedInfo.value = '已加载 3D Tiles 示例数据'
-    await viewer.zoomTo(tileset)
+
+    const sphere = tileset.boundingSphere
+    viewer.camera.flyToBoundingSphere(sphere, {
+      offset: new HeadingPitchRange(
+        0,
+        CesiumMath.toRadians(-35),
+        sphere.radius * 4,
+      ),
+      duration: 1.4,
+    })
   }
 
   function playRoute() {

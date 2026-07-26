@@ -18,7 +18,8 @@ body,
   overflow: hidden;
 }
 
-button {
+button,
+.el-button {
   font: inherit;
 }
 
@@ -99,6 +100,8 @@ button {
   font-size: 11px;
   letter-spacing: .08em;
   color: #9ab3c1;
+  border-color: #1f4555;
+  background: #09202edb;
 }
 
 .live i {
@@ -114,6 +117,7 @@ button {
 .icon-btn {
   width: 38px;
   height: 38px;
+  padding: 0;
   color: white;
   border: 1px solid #294656;
   background: #0d2130cc;
@@ -150,6 +154,10 @@ button {
   background: none;
   cursor: pointer;
   text-align: left;
+}
+
+.rail .el-button {
+  margin-left: 0;
 }
 
 .rail button span {
@@ -232,20 +240,28 @@ button {
   cursor: pointer;
 }
 
-.layer-popover {
-  position: fixed;
-  z-index: 4;
-  width: min(340px, calc(100vw - 28px));
-  padding: 18px 20px;
-  border: 1px solid #284453;
-  background: #071521d8;
-  backdrop-filter: blur(12px);
-  box-shadow: 0 18px 60px rgba(0, 0, 0, .28);
-  transform: translate(-50%, -100%);
-  pointer-events: auto;
+.primary.el-button>span {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
 }
 
-.layer-popover p:first-child {
+.el-popper.layer-popover {
+  max-width: min(340px, calc(100vw - 28px));
+  padding: 18px 20px;
+  border: 1px solid #284453;
+  background: #071521e8;
+  backdrop-filter: blur(12px);
+  box-shadow: 0 18px 60px rgba(0, 0, 0, .28);
+  color: #ecfaff;
+}
+
+.el-popper.layer-popover .el-popper__arrow::before {
+  border-color: #284453;
+  background: #071521e8;
+}
+
+.layer-popover__meta {
   margin: 0;
   color: #3fe4f7;
   font-size: 10px;
@@ -253,13 +269,13 @@ button {
   text-transform: uppercase;
 }
 
-.layer-popover h2 {
+.layer-popover__title {
   margin: 12px 0 0;
   font-size: 26px;
   line-height: 1.15;
 }
 
-.layer-popover p:last-child {
+.layer-popover__description {
   margin: 0;
   color: #9fb6c4;
   font-size: 12px;
@@ -298,6 +314,12 @@ button {
   border: 1px solid #234b5b;
   background: #0b2534;
   cursor: pointer;
+}
+
+.panel-row .el-button,
+.ghost.el-button {
+  margin-left: 0;
+  padding: 0 10px;
 }
 
 .panel-row button.active,
@@ -400,7 +422,7 @@ button {
     padding: 14px 16px;
   }
 
-  .layer-popover h2 {
+  .layer-popover__title {
     font-size: 20px;
   }
 
@@ -441,6 +463,10 @@ button {
     color: #dff9ff;
     border: 1px solid #234b5b;
     background: #0b2534;
+  }
+
+  .mobile-toolbar .el-button {
+    margin-left: 0;
   }
 
   .mobile-toolbar button.active {

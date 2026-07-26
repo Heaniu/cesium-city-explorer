@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
+import LayerPopover from './components/LayerPopover.vue'
 import { useCesiumDemo } from './composables/useCesiumDemo'
 
 const container = ref<HTMLElement>()
@@ -48,21 +49,21 @@ onMounted(initViewer)
         </div>
       </div>
       <div class="top-actions">
-        <span class="live"><i />{{ statusLabel }}</span>
-        <button class="icon-btn" aria-label="重置视角" title="重置视角" @click="flyTo(cities[0])">⌖</button>
+        <el-tag class="live" effect="dark" round><i />{{ statusLabel }}</el-tag>
+        <el-button class="icon-btn" aria-label="重置视角" title="重置视角" @click="flyTo(cities[0])">⌖</el-button>
       </div>
     </header>
 
     <aside class="rail">
       <span class="rail-label">EXPLORE</span>
-      <button v-for="(city, i) in cities" :key="city.name" :class="{ active: showCityInfo && selected.name === city.name }" @click="flyTo(city)">
+      <el-button v-for="(city, i) in cities" :key="city.name" :class="{ active: showCityInfo && selected.name === city.name }" text @click="flyTo(city)">
         <span>0{{ i + 1 }}</span>{{ city.name }}
-      </button>
+      </el-button>
       <div class="rail-line" />
-      <button @click="toggleGeoJson"><span>06</span>{{ geoJsonVisible ? '隐藏区域' : 'GeoJSON' }}</button>
-      <button @click="toggleModel"><span>07</span>{{ modelVisible ? '隐藏模型' : '模型' }}</button>
-      <button @click="toggle3DTiles"><span>08</span>{{ tilesVisible ? '隐藏瓦片' : '3D Tiles' }}</button>
-      <button @click="playRoute"><span>09</span>航线</button>
+      <el-button text @click="toggleGeoJson"><span>06</span>{{ geoJsonVisible ? '隐藏区域' : 'GeoJSON' }}</el-button>
+      <el-button text @click="toggleModel"><span>07</span>{{ modelVisible ? '隐藏模型' : '模型' }}</el-button>
+      <el-button text @click="toggle3DTiles"><span>08</span>{{ tilesVisible ? '隐藏瓦片' : '3D Tiles' }}</el-button>
+      <el-button text @click="playRoute"><span>09</span>航线</el-button>
     </aside>
 
     <section v-if="showCityInfo" class="hero-card">
@@ -71,30 +72,25 @@ onMounted(initViewer)
       <h2>{{ selected.subtitle }}</h2>
       <div class="rule" />
       <p class="description">{{ selected.summary }}</p>
-      <button class="primary" @click="playRoute">{{ routePlaying ? '演示进行中' : '开始自动巡航' }} <span>→</span></button>
+      <el-button class="primary" @click="playRoute">{{ routePlaying ? '演示进行中' : '开始自动巡航' }} <span>→</span></el-button>
     </section>
 
-    <section v-if="layerBubble" class="layer-popover" :style="layerBubbleStyle" @click.stop>
-      <p>{{ layerBubble.meta }}</p>
-      <h2>{{ layerBubble.title }}</h2>
-      <div class="rule" />
-      <p>{{ layerBubble.description }}</p>
-    </section>
+    <LayerPopover :bubble="layerBubble" :position="layerBubbleStyle" />
 
     <section class="tool-panel">
       <div class="panel-row">
         <span>底图</span>
-        <button :class="{ active: baseMap === 'osm' }" @click="setBaseMap('osm')">标准</button>
-        <button :class="{ active: baseMap === 'dark' }" @click="setBaseMap('dark')">暗色</button>
+        <el-button :class="{ active: baseMap === 'osm' }" @click="setBaseMap('osm')">标准</el-button>
+        <el-button :class="{ active: baseMap === 'dark' }" @click="setBaseMap('dark')">暗色</el-button>
       </div>
       <div class="panel-row">
         <span>绘制</span>
-        <button :class="{ active: drawMode === 'point' }" @click="setDrawMode('point')">点</button>
-        <button :class="{ active: drawMode === 'line' }" @click="setDrawMode('line')">线</button>
-        <button :class="{ active: drawMode === 'polygon' }" @click="setDrawMode('polygon')">面</button>
-        <button :class="{ active: drawMode === 'measure' }" @click="setDrawMode('measure')">量距</button>
+        <el-button :class="{ active: drawMode === 'point' }" @click="setDrawMode('point')">点</el-button>
+        <el-button :class="{ active: drawMode === 'line' }" @click="setDrawMode('line')">线</el-button>
+        <el-button :class="{ active: drawMode === 'polygon' }" @click="setDrawMode('polygon')">面</el-button>
+        <el-button :class="{ active: drawMode === 'measure' }" @click="setDrawMode('measure')">量距</el-button>
       </div>
-      <button class="ghost" @click="clearSketch">清空绘制</button>
+      <el-button class="ghost" @click="clearSketch">清空绘制</el-button>
     </section>
 
     <section class="stats">
@@ -106,21 +102,21 @@ onMounted(initViewer)
 
     <section class="mobile-toolbar">
       <div class="mobile-group">
-        <button v-for="city in cities" :key="city.name" :class="{ active: showCityInfo && selected.name === city.name }" @click="flyTo(city)">
+        <el-button v-for="city in cities" :key="city.name" :class="{ active: showCityInfo && selected.name === city.name }" @click="flyTo(city)">
           {{ city.name }}
-        </button>
+        </el-button>
       </div>
       <div class="mobile-group">
-        <button @click="toggleGeoJson">GeoJSON</button>
-        <button @click="toggleModel">模型</button>
-        <button @click="toggle3DTiles">3D Tiles</button>
-        <button :class="{ active: routePlaying }" @click="playRoute">航线</button>
-        <button @click="setBaseMap(baseMap === 'osm' ? 'dark' : 'osm')">{{ baseMap === 'osm' ? '暗色' : '标准' }}</button>
-        <button :class="{ active: drawMode === 'measure' }" @click="setDrawMode('measure')">量距</button>
-        <button :class="{ active: drawMode === 'point' }" @click="setDrawMode('point')">点</button>
-        <button :class="{ active: drawMode === 'line' }" @click="setDrawMode('line')">线</button>
-        <button :class="{ active: drawMode === 'polygon' }" @click="setDrawMode('polygon')">面</button>
-        <button @click="clearSketch">清空</button>
+        <el-button @click="toggleGeoJson">GeoJSON</el-button>
+        <el-button @click="toggleModel">模型</el-button>
+        <el-button @click="toggle3DTiles">3D Tiles</el-button>
+        <el-button :class="{ active: routePlaying }" @click="playRoute">航线</el-button>
+        <el-button @click="setBaseMap(baseMap === 'osm' ? 'dark' : 'osm')">{{ baseMap === 'osm' ? '暗色' : '标准' }}</el-button>
+        <el-button :class="{ active: drawMode === 'measure' }" @click="setDrawMode('measure')">量距</el-button>
+        <el-button :class="{ active: drawMode === 'point' }" @click="setDrawMode('point')">点</el-button>
+        <el-button :class="{ active: drawMode === 'line' }" @click="setDrawMode('line')">线</el-button>
+        <el-button :class="{ active: drawMode === 'polygon' }" @click="setDrawMode('polygon')">面</el-button>
+        <el-button @click="clearSketch">清空</el-button>
       </div>
     </section>
   </main>

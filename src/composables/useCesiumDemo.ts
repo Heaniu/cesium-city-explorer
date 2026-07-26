@@ -174,7 +174,6 @@ export function useCesiumDemo(container: Ref<HTMLElement | undefined>) {
   async function toggleGeoJson() {
     if (!viewer) return
     showCityInfo.value = false
-    activeLayerDemo.value = 'geojson'
     activeTool.value = 'GeoJSON 区域'
     if (geoJsonLayer) {
       viewer.dataSources.remove(geoJsonLayer, true)
@@ -197,11 +196,10 @@ export function useCesiumDemo(container: Ref<HTMLElement | undefined>) {
     showLayerBubble('geojson', wuhanBoundaryCenter)
   }
 
-  function toggleModel() {
+  async function toggleModel() {
     if (!viewer) return
     ensureSources()
     showCityInfo.value = false
-    activeLayerDemo.value = 'model'
     activeTool.value = '模型加载'
     modelVisible.value = !modelVisible.value
     modelSource!.entities.removeAll()
@@ -233,14 +231,13 @@ export function useCesiumDemo(container: Ref<HTMLElement | undefined>) {
         scaleByDistance: new NearFarScalar(1000, 1, 70000, .45),
       },
     })
-    viewer.flyTo(modelEntity, { duration: 1.2 })
+    await viewer.flyTo(modelEntity, { duration: 1.2 })
     showLayerBubble('model', modelTopPosition)
   }
 
   async function toggle3DTiles() {
     if (!viewer) return
     showCityInfo.value = false
-    activeLayerDemo.value = 'tiles'
     activeTool.value = '3D Tiles'
     tilesVisible.value = !tilesVisible.value
 
@@ -263,19 +260,25 @@ export function useCesiumDemo(container: Ref<HTMLElement | undefined>) {
     pickedInfo.value = '已加载 3D Tiles 示例数据'
 
     const sphere = tileset.boundingSphere
+
+    await new Promise<void>((resolve) => {
+      viewer!.camera.flyToBoundingSphere(sphere, {
+        offset: new HeadingPitchRange(
+          0,
+          CesiumMath.toRadians(-35),
+          sphere.radius * 4,
+        ),
+        duration: 1.4,
+        complete: resolve,
+        cancel: resolve,
+      })
+    })
+
     showLayerBubble('tiles', Cartesian3.add(
       sphere.center,
       new Cartesian3(0, 0, sphere.radius),
       new Cartesian3(),
     ))
-    viewer.camera.flyToBoundingSphere(sphere, {
-      offset: new HeadingPitchRange(
-        0,
-        CesiumMath.toRadians(-35),
-        sphere.radius * 4,
-      ),
-      duration: 1.4,
-    })
   }
 
   function showLayerBubble(layer: LayerDemo, anchor: Cartesian3) {

@@ -56,14 +56,14 @@ onMounted(initViewer)
 
     <aside class="rail">
       <span class="rail-label">EXPLORE</span>
-      <el-button v-for="(city, i) in cities" :key="city.name" :class="{ active: showCityInfo && selected.name === city.name }" text @click="flyTo(city)">
+      <el-button  size="large" v-for="(city, i) in cities" :key="city.name" :class="{ active: showCityInfo && selected.name === city.name }" text @click="flyTo(city)">
         <span>0{{ i + 1 }}</span>{{ city.name }}
       </el-button>
       <div class="rail-line" />
-      <el-button text @click="toggleGeoJson"><span>06</span>{{ geoJsonVisible ? '隐藏区域' : 'GeoJSON' }}</el-button>
-      <el-button text @click="toggleModel"><span>07</span>{{ modelVisible ? '隐藏模型' : '模型' }}</el-button>
-      <el-button text @click="toggle3DTiles"><span>08</span>{{ tilesVisible ? '隐藏瓦片' : '3D Tiles' }}</el-button>
-      <el-button text @click="playRoute"><span>09</span>航线</el-button>
+      <el-button  size="large" text @click="toggleGeoJson"><span>06</span>{{ geoJsonVisible ? '隐藏区域' : 'GeoJSON' }}</el-button>
+      <el-button  size="large" text @click="toggleModel"><span>07</span>{{ modelVisible ? '隐藏模型' : '模型' }}</el-button>
+      <el-button  size="large" text @click="toggle3DTiles"><span>08</span>{{ tilesVisible ? '隐藏瓦片' : '3D Tiles' }}</el-button>
+      <el-button  size="large" text @click="playRoute"><span>09</span>航线</el-button>
     </aside>
 
     <section v-if="showCityInfo" class="hero-card">

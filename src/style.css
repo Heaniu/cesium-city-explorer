@@ -130,29 +130,31 @@ button,
   left: 32px;
   top: 130px;
   bottom: 42px;
-  width: 86px;
+  width: 128px;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 6px;
 }
 
 .rail-label {
   color: #527283;
-  font-size: 9px;
-  letter-spacing: .25em;
-  margin-bottom: 12px;
+  font-size: 11px;
+  letter-spacing: .2em;
+  margin-bottom: 14px;
 }
 
 .rail button {
   display: flex;
   align-items: center;
-  gap: 10px;
-  height: 38px;
+  gap: 12px;
+  height: 44px;
   padding: 0;
   color: #7896a6;
   border: 0;
   background: none;
   cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
   text-align: left;
 }
 
@@ -160,23 +162,17 @@ button,
   margin-left: 0;
 }
 
-.rail button span {
-  font: 9px monospace;
-  color: #3c5e70;
-}
-
-.rail button:hover,
-.rail button.active {
-  color: white;
-}
-
 .rail button.active::before {
   content: "";
   width: 2px;
-  height: 21px;
+  height: 25px;
   background: #24dbf2;
   box-shadow: 0 0 12px #24dbf2;
   margin-left: -12px;
+}
+
+.rail .el-button.is-text:not(.is-disabled):hover {
+  background-color: inherit;
 }
 
 .rail-line {
@@ -188,7 +184,7 @@ button,
 .hero-card {
   position: fixed;
   z-index: 3;
-  left: 148px;
+  left: 190px;
   top: 24%;
   width: 330px;
 }

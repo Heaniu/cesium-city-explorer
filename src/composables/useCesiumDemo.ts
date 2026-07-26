@@ -4,6 +4,7 @@ import {
   Cartesian2,
   Cartesian3,
   Cartographic,
+  Cesium3DTileset,
   Color,
   ConstantPositionProperty,
   CustomDataSource,
@@ -23,6 +24,7 @@ import { cities, districtGeoJson } from '../data'
 import type { BaseMap, City, DrawMode } from '../types'
 
 const modelUrl = 'https://cesium.com/downloads/cesiumjs/releases/1.132/Apps/SampleData/models/CesiumAir/Cesium_Air.glb'
+const tilesetUrl = 'https://cesium.com/downloads/cesiumjs/releases/1.132/Apps/SampleData/Cesium3DTiles/Tilesets/Tileset/tileset.json'
 
 function createViewer(container: HTMLElement) {
   return new Viewer(container, {
@@ -60,6 +62,7 @@ export function useCesiumDemo(container: Ref<HTMLElement | undefined>) {
   const baseMap = ref<BaseMap>('osm')
   const geoJsonVisible = ref(false)
   const modelVisible = ref(false)
+  const tilesVisible = ref(false)
   const routePlaying = ref(false)
   const pickedInfo = ref('点击城市标记或绘制对象查看属性')
 
@@ -70,6 +73,7 @@ export function useCesiumDemo(container: Ref<HTMLElement | undefined>) {
   let drawSource: CustomDataSource | undefined
   let routeSource: CustomDataSource | undefined
   let modelSource: CustomDataSource | undefined
+  let tileset: Cesium3DTileset | undefined
   let sketchPoints: Cartesian3[] = []
 
   const statusLabel = computed(() => drawMode.value === 'none' ? '系统在线 · WebGL' : '点击地球添加节点')
@@ -177,6 +181,26 @@ export function useCesiumDemo(container: Ref<HTMLElement | undefined>) {
       },
     })
     viewer.flyTo(entity, { duration: 1.2 })
+  }
+
+  async function toggle3DTiles() {
+    if (!viewer) return
+    activeTool.value = '3D Tiles'
+    tilesVisible.value = !tilesVisible.value
+
+    if (!tilesVisible.value) {
+      if (tileset) {
+        viewer.scene.primitives.remove(tileset)
+        tileset = undefined
+      }
+      pickedInfo.value = '3D Tiles 已隐藏'
+      return
+    }
+
+    tileset = await Cesium3DTileset.fromUrl(tilesetUrl)
+    viewer.scene.primitives.add(tileset)
+    pickedInfo.value = '已加载 3D Tiles 示例数据'
+    await viewer.zoomTo(tileset)
   }
 
   function playRoute() {
@@ -395,6 +419,8 @@ export function useCesiumDemo(container: Ref<HTMLElement | undefined>) {
     setBaseMap,
     setDrawMode,
     statusLabel,
+    tilesVisible,
+    toggle3DTiles,
     toggleGeoJson,
     toggleModel,
   }

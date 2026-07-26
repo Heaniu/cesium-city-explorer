@@ -23,6 +23,8 @@ const {
   setBaseMap,
   setDrawMode,
   statusLabel,
+  tilesVisible,
+  toggle3DTiles,
   toggleGeoJson,
   toggleModel,
 } = useCesiumDemo(container)
@@ -56,7 +58,8 @@ onMounted(initViewer)
       <div class="rail-line" />
       <button @click="toggleGeoJson"><span>06</span>{{ geoJsonVisible ? '隐藏区域' : 'GeoJSON' }}</button>
       <button @click="toggleModel"><span>07</span>{{ modelVisible ? '隐藏模型' : '模型' }}</button>
-      <button @click="playRoute"><span>08</span>航线</button>
+      <button @click="toggle3DTiles"><span>08</span>{{ tilesVisible ? '隐藏瓦片' : '3D Tiles' }}</button>
+      <button @click="playRoute"><span>09</span>航线</button>
     </aside>
 
     <section class="hero-card">
@@ -100,6 +103,7 @@ onMounted(initViewer)
       <div class="mobile-group">
         <button :class="{ active: geoJsonVisible }" @click="toggleGeoJson">GeoJSON</button>
         <button :class="{ active: modelVisible }" @click="toggleModel">模型</button>
+        <button :class="{ active: tilesVisible }" @click="toggle3DTiles">3D Tiles</button>
         <button :class="{ active: routePlaying }" @click="playRoute">航线</button>
         <button @click="setBaseMap(baseMap === 'osm' ? 'dark' : 'osm')">{{ baseMap === 'osm' ? '暗色' : '标准' }}</button>
         <button :class="{ active: drawMode === 'measure' }" @click="setDrawMode('measure')">量距</button>
